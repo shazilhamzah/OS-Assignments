@@ -1,0 +1,3 @@
+John Doe, SSN: CONFIDENTIAL,  Address: 123 Main St
+Jane Smith, SSN: CONFIDENTIAL,  Address: 456 Elm St
+Decrypted by child PID: 10578, Redacted by child PID: 10579, Parent PID: 10577
