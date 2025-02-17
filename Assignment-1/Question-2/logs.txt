@@ -1,3 +1,8 @@
 hello world
+<<<<<<< HEAD
 new line is here
 ssn
+=======
+this is a test
+n is for newline
+>>>>>>> a6de4c5 (grep command updated)
