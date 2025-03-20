@@ -4,8 +4,21 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#define MAX_INPUT_LENGTH 1024
-#define MAX_TOKENS 64
+#define MAX_INPUT_LENGTH 5000
+#define MAX_TOKENS 100
+
+void remove_quotes(char *str)
+{
+    int j = 0;
+    for (int i = 0; str[i]; i++)
+    {
+        if (str[i] != '"' && str[i] != '\'')
+        {
+            str[j++] = str[i];
+        }
+    }
+    str[j] = '\0';
+}
 
 int main()
 {
@@ -23,10 +36,10 @@ int main()
 
         if (fgets(input, MAX_INPUT_LENGTH, stdin) == NULL)
         {
-            break; // Handle EOF (Ctrl+D)
+            break;
         }
 
-        input[strcspn(input, "\n")] = '\0'; // Remove newline
+        input[strcspn(input, "\n")] = '\0'; 
 
         if (strcmp(input, exit_cmd) == 0)
         {
@@ -34,9 +47,8 @@ int main()
             break;
         }
 
-        strcpy(input_copy, input); // Save a copy of the original input for display
+        strcpy(input_copy, input);
 
-        // Tokenize the input
         i = 0;
         token = strtok(input, " \t");
         while (token != NULL && i < MAX_TOKENS - 1)
@@ -45,20 +57,27 @@ int main()
             i++;
             token = strtok(NULL, " \t");
         }
-        tokens[i] = NULL; // Null-terminate the tokens array
+        tokens[i] = NULL; 
+
+        // Remove quotes from tokens
+        for (int j = 0; j < i; j++)
+        {
+            remove_quotes(tokens[j]);
+        }
+
+        // Print tokens
+        // printf("Tokens: ");
+        // for (int j = 0; j < i; j++)
+        // {
+        //     printf("[%s] ", tokens[j]);
+        // }
+        // printf("\n");
 
         pid_t pid = fork();
-        if (pid == -1)
-        {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        }
-        else if (pid == 0)
+        if (pid == 0)
         {
             // Child process
             execvp(tokens[0], tokens);
-            perror("execvp");
-            exit(EXIT_FAILURE);
         }
         else
         {
@@ -93,13 +112,26 @@ int main()
             }
             else if (strcmp(tokens[0], "grep") == 0)
             {
-                if (i >= 3)
+                // Check if the child process exited normally
+                if (WIFEXITED(status))
                 {
-                    printf("grep searches for the word %s in %s.\n", tokens[1], tokens[2]);
+                    int exit_code = WEXITSTATUS(status);
+                    if (exit_code == 0)
+                    {
+                        printf("grep found matches.\n");
+                    }
+                    else if (exit_code == 1)
+                    {
+                        printf("grep found no matches.\n");
+                    }
+                    else
+                    {
+                        printf("grep encountered an error.\n");
+                    }
                 }
                 else
                 {
-                    printf("grep searches for a pattern in files.\n");
+                    printf("grep did not exit normally.\n");
                 }
             }
             else if (strcmp(tokens[0], "ls") == 0)
