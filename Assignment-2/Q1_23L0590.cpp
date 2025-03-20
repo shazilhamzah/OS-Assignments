@@ -112,7 +112,7 @@ int main()
     if (person3 == 0)
     {
         cout << "I am child 2 with PID " << getpid() << endl;
-        exit(1);
+        exit(0);
     }
 
     return 0;
