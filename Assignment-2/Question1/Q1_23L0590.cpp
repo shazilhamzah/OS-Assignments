@@ -60,11 +60,10 @@ int main()
         dup2(savedSTDIn, STDIN_FILENO);
         close(savedSTDIn);
 
-
         // EXTRACTING OUT ALERT PART IN A BUFFER
         char filteredData[FILTERED_DATA_SIZE];
-        int j = 0;                            
-        int buffer_size = FORENSIC_LOGS_SIZE; 
+        int j = 0;
+        int buffer_size = FORENSIC_LOGS_SIZE;
 
         for (int i = 0; i <= buffer_size - 5;)
         {
@@ -98,10 +97,9 @@ int main()
         cout << endl
              << filteredData << endl;
 
-
         // WRITING ON PIPE 2
         close(fd2[0]);
-        dup2(fd2[1],STDOUT_FILENO);
+        dup2(fd2[1], STDOUT_FILENO);
         // cout<<filteredData;
 
         // cout << "I am child 2 with PID " << getpid() << endl;
@@ -111,7 +109,9 @@ int main()
     // waitpid(person2,nullptr,0);
     pid_t person3 = fork();
 
-    if(person3==0){
+    if (person3 == 0)
+    {
+        cout << "I am child 2 with PID " << getpid() << endl;
         exit(0);
     }
 

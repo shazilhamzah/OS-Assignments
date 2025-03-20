@@ -1,9 +1,0 @@
-ALERT: Unauthorized access detected in sector 5
-System reboot initiated by Admin
-ALERT: Multiple failed login attempts from IP 192.168.1.100
-File integrity check completed, no anomalies found
-ALERT: Suspicious file transfer detected to external device
-ALERT: Unauthorized access detected in sector 5
-Network traffic anomaly detected, investigating further
-ALERT: Multiple failed login attempts from IP 192.168.1.100
-Scheduled backup completed successfully
