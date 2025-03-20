@@ -100,20 +100,41 @@ int main()
         // WRITING ON PIPE 2
         close(fd2[0]);
         dup2(fd2[1], STDOUT_FILENO);
-        // cout<<filteredData;
+        cout << filteredData;
 
-        // cout << "I am child 2 with PID " << getpid() << endl;
+        cout << "I am child 2 with PID " << getpid() << endl;
         exit(0);
     }
 
-    // waitpid(person2,nullptr,0);
     pid_t person3 = fork();
 
     if (person3 == 0)
     {
-        cout << "I am child 2 with PID " << getpid() << endl;
+        // LINKING WITH PIPE AND REDIRECTING INPUT
+        int savedSTDIn = dup(STDIN_FILENO);
+        close(fd2[1]);
+        dup2(fd2[0], STDIN_FILENO);
+
+        // TAKING INPUT FROM PIPE
+        char buffer[FORENSIC_LOGS_SIZE];
+        for (int i = 0; i < FORENSIC_LOGS_SIZE; i++)
+        {
+            cin >> noskipws >> buffer[i];
+        }
+        cout << endl
+             << buffer << endl;
+
+        dup2(savedSTDIn, STDIN_FILENO);
+        close(savedSTDIn);
+
+        cout << "I am child 3 with PID " << getpid() << endl;
         exit(0);
     }
+
+    // waitpid(person2, NULL, 0);
+    waitpid(person3, NULL, 0);
+
+    cout << "I am parent with PID " << getpid() << endl;
 
     return 0;
 }
