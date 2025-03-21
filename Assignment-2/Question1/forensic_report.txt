@@ -1,0 +1,3 @@
+ALERT: Unauthorized access detected in sector 5
+ALERT: Multiple failed login attempts from IP 192.168.1.100
+ALERT: Suspicious file transfer detected to external device
