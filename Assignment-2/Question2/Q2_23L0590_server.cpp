@@ -26,12 +26,6 @@ string findBookByName(vector<Books> &books, const string bookName, int quantity,
 int main()
 {
     cout << "Hello, from Server!" << endl;
-    cout << "Waiting for client request..." << endl;
-    char name[100];
-    char func;
-    char bookName[100];
-    int quantity;
-
     int booksFile = open("books.txt", O_RDONLY);
     char buffer[1000];
     read(booksFile, buffer, 1000);
@@ -40,57 +34,67 @@ int main()
     char temp[1000];
     int start = 0;
     extractBooks(buffer, start, temp, books);
-
     mkfifo(FIFO_PATH, 0666);
-    int fifoRead = open(FIFO_PATH, O_RDONLY);
-    char info[1000];
 
-    read(fifoRead, info, 1000);
-    cout << "Client connected: " << info << endl;
-    strcpy(name, info);
-
-    read(fifoRead, info, 1000);
-
-    int startPos = strlen(name) + 1;
-
-    func = info[startPos];
-    startPos += 2;
-
-    quantity = 0;
-    for (int i = startPos; info[i] != ',' && info[i] != '\0'; i++)
+    while (1)
     {
-        quantity = quantity * 10 + (info[i] - '0');
-        startPos++;
-    }
-    startPos++;
+        cout << "Waiting for client request..." << endl;
+        char name[100];
+        char func;
+        char bookName[100];
+        int quantity;
 
-    int bookNameIndex = 0;
-    for (int i = startPos; info[i] != '\0'; i++)
-    {
-        bookName[bookNameIndex++] = info[i];
-    }
-    bookName[bookNameIndex] = '\0';
+        int fifoRead = open(FIFO_PATH, O_RDONLY);
+        char info[1000];
 
-    // cout << "Function: " << func << "\n";
-    // cout << "Quantity: " << quantity << "\n";
-    // cout << "Book Name: " << bookName << endl;
+        read(fifoRead, info, 1000);
+        cout << "Client connected: " << info << endl;
+        strcpy(name, info);
 
-    close(fifoRead);
-    string message = findBookByName(books, bookName, quantity, func);
-    // cout << message;
+        read(fifoRead, info, 1000);
 
-    char messageBuffer[100];
-    strcpy(messageBuffer, message.c_str());
-    int fifoWrite = open(FIFO_PATH, O_WRONLY);
-    write(fifoWrite, messageBuffer, 100);
+        int startPos = strlen(name) + 1;
 
-    for (auto book : books)
-    {
-        for (auto name : book.name)
+        func = info[startPos];
+        startPos += 2;
+
+        quantity = 0;
+        for (int i = startPos; info[i] != ',' && info[i] != '\0'; i++)
         {
-            cout << name << " ";
+            quantity = quantity * 10 + (info[i] - '0');
+            startPos++;
         }
-        cout << book.quantity << endl;
+        startPos++;
+
+        int bookNameIndex = 0;
+        for (int i = startPos; info[i] != '\0'; i++)
+        {
+            bookName[bookNameIndex++] = info[i];
+        }
+        bookName[bookNameIndex] = '\0';
+
+        // cout << "Function: " << func << "\n";
+        // cout << "Quantity: " << quantity << "\n";
+        // cout << "Book Name: " << bookName << endl;
+
+        close(fifoRead);
+        string message = findBookByName(books, bookName, quantity, func);
+        // cout << message;
+
+        char messageBuffer[100];
+        strcpy(messageBuffer, message.c_str());
+        int fifoWrite = open(FIFO_PATH, O_WRONLY);
+        write(fifoWrite, messageBuffer, 100);
+        close(fifoWrite);
+
+        for (auto book : books)
+        {
+            for (auto name : book.name)
+            {
+                cout << name << " ";
+            }
+            cout << book.quantity << endl;
+        }
     }
 
     return 0;
