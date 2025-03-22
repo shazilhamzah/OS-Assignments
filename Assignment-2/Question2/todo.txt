@@ -1,2 +1,0 @@
-1. read book data into a buffer
-2. put books into books struct
