@@ -91,7 +91,7 @@ int main()
     int fifoRead = open(FIFO_PATH, O_RDONLY);
     char message[100];
     read(fifoRead, message, 100);
-    cout << message;
+    cout << message << endl;
 
     return 0;
 }

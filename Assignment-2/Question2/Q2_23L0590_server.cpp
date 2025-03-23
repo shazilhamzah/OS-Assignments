@@ -74,28 +74,15 @@ int main()
         }
         bookName[bookNameIndex] = '\0';
 
-        // cout << "Function: " << func << "\n";
-        // cout << "Quantity: " << quantity << "\n";
-        // cout << "Book Name: " << bookName << endl;
 
         close(fifoRead);
         string message = findBookByName(books, bookName, quantity, func);
-        // cout << message;
 
         char messageBuffer[100];
         strcpy(messageBuffer, message.c_str());
         int fifoWrite = open(FIFO_PATH, O_WRONLY);
         write(fifoWrite, messageBuffer, 100);
         close(fifoWrite);
-
-        for (auto book : books)
-        {
-            for (auto name : book.name)
-            {
-                cout << name << " ";
-            }
-            cout << book.quantity << endl;
-        }
 
         writeToFile(books);
     }
@@ -155,31 +142,28 @@ string findBookByName(vector<Books> &books, const string bookName, int quantity,
 
         if (fullBookName == bookName)
         {
-            cout << "Book found!" << endl;
-            if (function == 'b') // Borrow operation
+            if (function == 'b')
             {
                 if (book.quantity >= quantity)
                 {
                     message = to_string(quantity) + " copies of " + bookName + " borrowed successfully!\n";
-                    book.quantity -= quantity; // Update quantity here
+                    book.quantity -= quantity; 
                 }
                 else
                 {
                     message = "Not enough quantity! You will get quantity: " + to_string(book.quantity) + "\n";
-                    book.quantity = 0; // Set to zero if not enough books are available
+                    book.quantity = 0; 
                 }
             }
-            else // Return operation
+            else
             {
-                cout << "Am in here!" << endl;
                 message = to_string(quantity) + " copies of " + bookName + " returned successfully!\n";
-                book.quantity += quantity; // Update quantity here
+                book.quantity += quantity; 
             }
             return message;
         }
     }
 
-    // If book not found, return appropriate error message
     if (function == 'b')
     {
         message = "Error: " + bookName + " does not exist in the library. Cannot borrow a non-existing book.\n";
@@ -208,6 +192,5 @@ void writeToFile(vector<Books> &books)
     buffer[999] = '\0';
     int booksFileWrite = open("books.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
     write(booksFileWrite, buffer, strlen(buffer));
-    cout << sizeof(buffer);
     return;
 }
