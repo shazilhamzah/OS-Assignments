@@ -22,13 +22,14 @@ struct Books
 
 void extractBooks(char buffer[1000], int &start, char temp[1000], vector<Books> &books);
 string findBookByName(vector<Books> &books, const string bookName, int quantity, char function);
+void writeToFile(vector<Books> &books);
 
 int main()
 {
     cout << "Hello, from Server!" << endl;
-    int booksFile = open("books.txt", O_RDONLY);
+    int booksFileRead = open("books.txt", O_RDONLY);
     char buffer[1000];
-    read(booksFile, buffer, 1000);
+    read(booksFileRead, buffer, 1000);
 
     vector<Books> books;
     char temp[1000];
@@ -95,6 +96,8 @@ int main()
             }
             cout << book.quantity << endl;
         }
+
+        writeToFile(books);
     }
 
     return 0;
@@ -187,4 +190,24 @@ string findBookByName(vector<Books> &books, const string bookName, int quantity,
     }
 
     return message;
+}
+
+void writeToFile(vector<Books> &books)
+{
+    char buffer[1000];
+    string result;
+    for (auto i : books)
+    {
+        for (const auto &word : i.name)
+        {
+            result += word + " ";
+        }
+        result += to_string(i.quantity) + "\n";
+    }
+    strncpy(buffer, result.c_str(), 1000);
+    buffer[999] = '\0';
+    int booksFileWrite = open("books.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    write(booksFileWrite, buffer, strlen(buffer));
+    cout << sizeof(buffer);
+    return;
 }
