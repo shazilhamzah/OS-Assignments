@@ -74,7 +74,6 @@ int main()
         }
         bookName[bookNameIndex] = '\0';
 
-
         close(fifoRead);
         string message = findBookByName(books, bookName, quantity, func);
 
@@ -147,18 +146,18 @@ string findBookByName(vector<Books> &books, const string bookName, int quantity,
                 if (book.quantity >= quantity)
                 {
                     message = to_string(quantity) + " copies of " + bookName + " borrowed successfully!\n";
-                    book.quantity -= quantity; 
+                    book.quantity -= quantity;
                 }
                 else
                 {
                     message = "Not enough quantity! You will get quantity: " + to_string(book.quantity) + "\n";
-                    book.quantity = 0; 
+                    book.quantity = 0;
                 }
             }
             else
             {
                 message = to_string(quantity) + " copies of " + bookName + " returned successfully!\n";
-                book.quantity += quantity; 
+                book.quantity += quantity;
             }
             return message;
         }
@@ -175,22 +174,28 @@ string findBookByName(vector<Books> &books, const string bookName, int quantity,
 
     return message;
 }
-
 void writeToFile(vector<Books> &books)
 {
     char buffer[1000];
     string result;
-    for (auto i : books)
+    for (size_t index = 0; index < books.size(); ++index)
     {
-        for (const auto &word : i.name)
+        for (const auto &word : books[index].name)
         {
             result += word + " ";
         }
-        result += to_string(i.quantity) + "\n";
+        result += to_string(books[index].quantity);
+
+        if (index != books.size() - 1) // Avoid adding '\n' after the last entry
+        {
+            result += "\n";
+        }
     }
+
     strncpy(buffer, result.c_str(), 1000);
     buffer[999] = '\0';
+
     int booksFileWrite = open("books.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
     write(booksFileWrite, buffer, strlen(buffer));
-    return;
+    close(booksFileWrite);
 }
