@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 {
     if (argc != 2)
     {
-        cerr << "Usage: " << argv[0] << " <filename>" << endl;
+        cout << "Invalid arguments!" << endl;
         return 1;
     }
 
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     pthread_t thread1, thread2;
     ThreadData data1, data2;
 
-    size_t mid = fileSize / 2;
+    int mid = fileSize / 2;
     data1.start = fileData;
     data1.end = fileData + mid - 1;
     data2.start = fileData + mid;
@@ -95,24 +95,29 @@ int main(int argc, char *argv[])
 
     if (pthread_create(&thread1, nullptr, func, &data1) != 0)
     {
-        perror("pthread_create");
-        munmap(fileData, fileSize);
+        perror("pthread_create1");
         return 1;
     }
 
     if (pthread_create(&thread2, nullptr, func, &data2) != 0)
     {
-        perror("pthread_create");
-        pthread_join(thread1, nullptr);
-        munmap(fileData, fileSize);
+        perror("pthread_create2");
         return 1;
     }
 
     pthread_join(thread1, nullptr);
     pthread_join(thread2, nullptr);
 
-    cout.write(fileData, fileSize);
-    cout << endl;
+    // cout.write(fileData, fileSize);
+    int fd1 = open(argv[1], O_RDWR);
+    if (fd == -1)
+    {
+        perror("open");
+        return 1;
+    }
+    char buffer[fileSize];
+    read(fd1, buffer, fileSize);
+    cout << buffer << endl;
 
     munmap(fileData, fileSize);
 

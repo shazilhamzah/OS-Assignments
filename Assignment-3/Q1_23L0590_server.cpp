@@ -36,6 +36,7 @@ int main()
 {
     cout << "Hello, from Server!" << endl;
 
+    // FILE OPENING AND READING DATA
     int booksFileRead = open("books.txt", O_RDONLY);
     if (booksFileRead == -1)
     {
@@ -70,6 +71,7 @@ int main()
     }
     close(dummy_fd);
 
+    // CREATING SHARED MEMORY
     key_t book_key = ftok(SHM_NAME_BOOK, 1024);
     if (book_key == -1)
     {
@@ -135,6 +137,7 @@ int main()
         return 1;
     }
 
+    // INITIALIZING SEMAPHORES
     sem_t *sem_request = sem_open(SEM_NAME_1, O_CREAT, 0666, 0);
     if (sem_request == SEM_FAILED)
     {
@@ -156,16 +159,15 @@ int main()
         return 1;
     }
 
+    // SERVER LOOP
     while (1)
     {
         cout << "Waiting for client request..." << endl;
 
-        if (sem_wait(sem_request) == -1)
-        {
-            perror("sem_wait sem_request");
-            continue;
-        }
+        // WAITS UNTILL IT GET INFORMATION FROM CLIENT
+        sem_wait(sem_request);
 
+        // TOKENIZE INPUT INFORMATION FROM USER
         char info[1000];
         strncpy(info, request_data, sizeof(info) - 1);
         info[sizeof(info) - 1] = '\0';
@@ -195,9 +197,13 @@ int main()
 
         string message = findBookByName(books, bookName, quantity, func);
 
+        // WRITE RESPONSED DATA ON SHARED MEMORY
+        sem_wait(sem_mutex);
         strncpy(response_data, message.c_str(), 1023);
+        sem_post(sem_mutex);
         response_data[1023] = '\0';
 
+        // SEND POST SIGNAL THAT IT HAS WRITTEN THE RESPONSE ON SHARED MEMORY
         sem_post(sem_response);
         memset(request_data, 0, 1024);
 
