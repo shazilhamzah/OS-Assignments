@@ -23,40 +23,91 @@ int main()
     cout << "Welcome to library client!" << endl;
 
     key_t book_key = ftok(SHM_NAME_BOOK, 1024);
-    int book_shmid = shmget(book_key, 1024, 0666);
-    char *book_data = (char *)shmat(book_shmid, NULL, 0);
-    if (book_data && book_data[0] != '\0')
-    {
-        cout << "Available Books:\n"
-             << book_data << endl;
+    if (book_key == -1) {
+        perror("ftok for book_key");
+        return 1;
     }
-    else
-    {
+
+    int book_shmid = shmget(book_key, 1024, 0666);
+    if (book_shmid == -1) {
+        perror("shmget for book data");
+        return 1;
+    }
+
+    char *book_data = (char *)shmat(book_shmid, NULL, 0);
+    if (book_data == (char *)(-1)) {
+        perror("shmat for book data");
+        return 1;
+    }
+
+    if (book_data[0] != '\0') {
+        cout << "Available Books:\n" << book_data << endl;
+    } else {
         cout << "No books available in the library!\n";
     }
+
     shmdt(book_data);
 
     key_t req_key = ftok(SHM_NAME_CLIENT, 1);
+    if (req_key == -1) {
+        perror("ftok for request");
+        return 1;
+    }
+
     int req_shmid = shmget(req_key, 1024, 0666);
+    if (req_shmid == -1) {
+        perror("shmget for request");
+        return 1;
+    }
+
     char *request_data = (char *)shmat(req_shmid, NULL, 0);
+    if (request_data == (char *)(-1)) {
+        perror("shmat for request");
+        return 1;
+    }
 
     key_t resp_key = ftok(SHM_NAME_CLIENT, 2);
+    if (resp_key == -1) {
+        perror("ftok for response");
+        return 1;
+    }
+
     int resp_shmid = shmget(resp_key, 1024, 0666);
+    if (resp_shmid == -1) {
+        perror("shmget for response");
+        return 1;
+    }
+
     char *response_data = (char *)shmat(resp_shmid, NULL, 0);
+    if (response_data == (char *)(-1)) {
+        perror("shmat for response");
+        return 1;
+    }
 
     sem_t *sem_request = sem_open(SEM_NAME_1, 0);
+    if (sem_request == SEM_FAILED) {
+        perror("sem_open sem_request");
+        return 1;
+    }
+
     sem_t *sem_response = sem_open(SEM_NAME_2, 0);
+    if (sem_response == SEM_FAILED) {
+        perror("sem_open sem_response");
+        return 1;
+    }
+
     sem_t *sem_mutex = sem_open(SEM_NAME_3, 0);
+    if (sem_mutex == SEM_FAILED) {
+        perror("sem_open sem_mutex");
+        return 1;
+    }
 
     char name[100], func[7], bookName[100];
     int quantity;
 
     getValidRollNumber(name);
-    // cout << "Enter your Roll Number (XXLXXXX): ";
-    // cin.getline(name, 100);
 
-    while (true)
-    {
+    while (true) {
         cout << "Hi " << name << "! Would you like to borrow or return? ";
         cin >> func;
         cin.ignore();
@@ -73,19 +124,34 @@ int main()
     char info[1000];
     snprintf(info, sizeof(info), "%s,%c,%d,%s", name, (func[0] == 'b') ? 'b' : 'r', quantity, bookName);
 
-    sem_wait(sem_mutex);
+    // Write request safely
+    if (sem_wait(sem_mutex) == -1) {
+        perror("sem_wait mutex");
+    }
+
     strcpy(request_data, info);
-    sem_post(sem_mutex);
 
-    sem_post(sem_request);
-    sem_wait(sem_response);
+    if (sem_post(sem_mutex) == -1) {
+        perror("sem_post mutex");
+    }
 
+    if (sem_post(sem_request) == -1) {
+        perror("sem_post request");
+    }
+
+    if (sem_wait(sem_response) == -1) {
+        perror("sem_wait response");
+    }
+
+    // Read response
     char message[1024];
     strncpy(message, response_data, sizeof(message) - 1);
-    cout << "\n\nServer Response: " << endl
-         << response_data << endl;
+    message[sizeof(message) - 1] = '\0';
+
+    cout << "\n\nServer Response: " << endl << message << endl;
     memset(response_data, 0, 1024);
 
+    // Cleanup
     shmdt(request_data);
     shmdt(response_data);
     sem_close(sem_request);
@@ -104,30 +170,25 @@ void getValidRollNumber(char name[100])
         cout << "Enter your Roll Number (XXLXXXX where X is a digit): ";
         cin.getline(name, 100);
 
-        // Check length first (must be exactly 7 characters)
         if (strlen(name) != 7)
         {
             cout << "Error: Roll Number must be exactly 7 characters long.\n";
             continue;
         }
 
-        // Check each character
         isValid = true;
         for (int i = 0; i < 7; i++)
         {
-            // First two characters must be digits
             if (i < 2 && !isdigit(name[i]))
             {
                 isValid = false;
                 break;
             }
-            // Third character must be 'L'
             else if (i == 2 && name[i] != 'L')
             {
                 isValid = false;
                 break;
             }
-            // Last four characters must be digits
             else if (i > 2 && !isdigit(name[i]))
             {
                 isValid = false;

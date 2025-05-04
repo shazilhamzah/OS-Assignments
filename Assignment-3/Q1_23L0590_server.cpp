@@ -35,9 +35,17 @@ void writeToFile(vector<Books> &books);
 int main()
 {
     cout << "Hello, from Server!" << endl;
+
     int booksFileRead = open("books.txt", O_RDONLY);
-    char buffer[1000];
-    read(booksFileRead, buffer, 1000);
+    if (booksFileRead == -1)
+    {
+        perror("Failed to open books.txt");
+        return 1;
+    }
+
+    char buffer[1000] = {0};
+    ssize_t bytes_read = read(booksFileRead, buffer, 999);
+    buffer[bytes_read] = '\0';
     close(booksFileRead);
 
     vector<Books> books;
@@ -45,72 +53,153 @@ int main()
     int start = 0;
     extractBooks(buffer, start, temp, books);
 
+    // Creating dummy files for ftok because they don't exist
+    int dummy_fd = open(SHM_NAME_BOOK, O_CREAT | O_RDWR, 0666);
+    if (dummy_fd == -1)
+    {
+        perror("Could not create SHM_NAME_BOOK");
+        return 1;
+    }
+    close(dummy_fd);
+
+    dummy_fd = open(SHM_NAME_CLIENT, O_CREAT | O_RDWR, 0666);
+    if (dummy_fd == -1)
+    {
+        perror("Could not create SHM_NAME_CLIENT");
+        return 1;
+    }
+    close(dummy_fd);
+
     key_t book_key = ftok(SHM_NAME_BOOK, 1024);
+    if (book_key == -1)
+    {
+        perror("ftok book_key");
+        return 1;
+    }
+
     int book_shmid = shmget(book_key, 1024, IPC_CREAT | 0666);
+    if (book_shmid == -1)
+    {
+        perror("shmget book_shmid");
+        return 1;
+    }
+
     char *book_data = (char *)shmat(book_shmid, NULL, 0);
+    if (book_data == (char *)(-1))
+    {
+        perror("shmat book_data");
+        return 1;
+    }
     strcpy(book_data, buffer);
     shmdt(book_data);
 
     key_t req_key = ftok(SHM_NAME_CLIENT, 1);
+    if (req_key == -1)
+    {
+        perror("ftok req_key");
+        return 1;
+    }
+
     int req_shmid = shmget(req_key, 1024, IPC_CREAT | 0666);
+    if (req_shmid == -1)
+    {
+        perror("shmget req_shmid");
+        return 1;
+    }
+
     char *request_data = (char *)shmat(req_shmid, NULL, 0);
+    if (request_data == (char *)(-1))
+    {
+        perror("shmat request_data");
+        return 1;
+    }
 
     key_t resp_key = ftok(SHM_NAME_CLIENT, 2);
+    if (resp_key == -1)
+    {
+        perror("ftok resp_key");
+        return 1;
+    }
+
     int resp_shmid = shmget(resp_key, 1024, IPC_CREAT | 0666);
+    if (resp_shmid == -1)
+    {
+        perror("shmget resp_shmid");
+        return 1;
+    }
+
     char *response_data = (char *)shmat(resp_shmid, NULL, 0);
+    if (response_data == (char *)(-1))
+    {
+        perror("shmat response_data");
+        return 1;
+    }
 
     sem_t *sem_request = sem_open(SEM_NAME_1, O_CREAT, 0666, 0);
+    if (sem_request == SEM_FAILED)
+    {
+        perror("sem_open sem_request");
+        return 1;
+    }
+
     sem_t *sem_response = sem_open(SEM_NAME_2, O_CREAT, 0666, 0);
+    if (sem_response == SEM_FAILED)
+    {
+        perror("sem_open sem_response");
+        return 1;
+    }
+
     sem_t *sem_mutex = sem_open(SEM_NAME_3, O_CREAT, 0666, 1);
+    if (sem_mutex == SEM_FAILED)
+    {
+        perror("sem_open sem_mutex");
+        return 1;
+    }
 
     while (1)
     {
-        int booksFileRead = open("books.txt", O_RDONLY);
-        char buffer[1000] = {0};
-        ssize_t bytes_read = read(booksFileRead, buffer, 999); // Leave space for null
-        if (bytes_read > 0)
-            buffer[bytes_read] = '\0';
-        close(booksFileRead);
-
-        books.clear();
-        char temp[1000];
-        int start = 0;
-        extractBooks(buffer, start, temp, books);
-
-        // Write fresh data to shared memory
-        key_t book_key = ftok(SHM_NAME_BOOK, 1024);
-        int book_shmid = shmget(book_key, 1024, IPC_CREAT | 0666);
-        char *book_data = (char *)shmat(book_shmid, NULL, 0);
-        strcpy(book_data, buffer);
-        shmdt(book_data);
-
         cout << "Waiting for client request..." << endl;
-        sem_wait(sem_request);
+
+        if (sem_wait(sem_request) == -1)
+        {
+            perror("sem_wait sem_request");
+            continue;
+        }
 
         char info[1000];
-        strcpy(info, request_data);
+        strncpy(info, request_data, sizeof(info) - 1);
+        info[sizeof(info) - 1] = '\0';
 
-        char name[100], bookName[100], func;
-        int quantity;
+        char name[100] = {0}, bookName[100] = {0}, func = '\0';
+        int quantity = 0;
+
         char *token = strtok(info, ",");
-        strcpy(name, token);
-        token = strtok(NULL, ",");
-        func = token[0];
-        token = strtok(NULL, ",");
-        quantity = atoi(token);
-        token = strtok(NULL, ",");
-        strcpy(bookName, token);
+        if (!token)
+            continue;
+        strncpy(name, token, sizeof(name) - 1);
 
-        cout << "Client connected: " << name << endl;
+        token = strtok(NULL, ",");
+        if (!token)
+            continue;
+        func = token[0];
+
+        token = strtok(NULL, ",");
+        if (!token)
+            continue;
+        quantity = atoi(token);
+
+        token = strtok(NULL, ",");
+        if (!token)
+            continue;
+        strncpy(bookName, token, sizeof(bookName) - 1);
+
         string message = findBookByName(books, bookName, quantity, func);
 
-        char messageBuffer[1024] = {0};
-        strncpy(messageBuffer, message.c_str(), sizeof(messageBuffer) - 1);
-        strcpy(response_data, messageBuffer);
-        sem_post(sem_response);
+        strncpy(response_data, message.c_str(), 1023);
+        response_data[1023] = '\0';
 
+        sem_post(sem_response);
         memset(request_data, 0, 1024);
-        // memset(response_data, 0, 1024);
 
         writeToFile(books);
     }
