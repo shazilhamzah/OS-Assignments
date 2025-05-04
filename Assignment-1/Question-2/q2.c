@@ -20,6 +20,19 @@ void remove_quotes(char *str)
     str[j] = '\0';
 }
 
+void remove_quotes(char *str)
+{
+    int j = 0;
+    for (int i = 0; str[i]; i++)
+    {
+        if (str[i] != '"' && str[i] != '\'')
+        {
+            str[j++] = str[i];
+        }
+    }
+    str[j] = '\0';
+}
+
 int main()
 {
     char input[MAX_INPUT_LENGTH];
@@ -72,6 +85,20 @@ int main()
         //     printf("[%s] ", tokens[j]);
         // }
         // printf("\n");
+
+        // Remove quotes from tokens
+        for (int j = 0; j < i; j++)
+        {
+            remove_quotes(tokens[j]);
+        }
+
+        // Debugging: Print tokens
+        printf("Tokens: ");
+        for (int j = 0; j < i; j++)
+        {
+            printf("[%s] ", tokens[j]);
+        }
+        printf("\n");
 
         pid_t pid = fork();
         if (pid == 0)
